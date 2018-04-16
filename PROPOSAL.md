@@ -2,7 +2,7 @@
 
 # Point Tracking
 
-The project will essentially be based on point of reference tracking. Using the computer's camera, the program will track a user defined point across the screen, allowing interesting analysis to be done and findings to be made.
+The project will essentially be based on point of reference tracking. Using the computer's camera, the program will look for a specific color (bright blue) on the screen, and will draw on the screen based on the movement of the marker.
 
 ## Application Usage
 The OpenFrameworks application will use the computer's camera using `ofVideoGrabber`. The user will then choose a point on the screen to track. After initialization, the user may move the point around the screen while being tracked.
@@ -14,7 +14,7 @@ There should be two main types of point tracking--simple "memoryless" tracking a
 Point tracking on screens has been a task engineers toil over--be it tracking faces in Adobe After Effects or tracking fingers on Google Hangouts, on screen tracking is a very useful skill. It could be used for learning (drawing on a shared computer window), forensic tracking (tracking a person in a car crash), and more. Of course for this project, the tracking will all be done real time based on the computer's camera.
 
 ## Scope
-The scope of this project is containted to discerning and tracking user defined points in real time using the computer's camera. If time permits, I would like to extend the project to pre-recorded videos, and possibly peer-to-peer point tracking (two computers).
+**For now, the scope is strictly restricted to allowing the user to draw on the screen using a bright blue marker.**
 
 ## Libraries
 ### `ofxSpatialHash`

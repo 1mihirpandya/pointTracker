@@ -5,7 +5,7 @@
 The project will essentially be based on point of reference tracking. Using the computer's camera, the program will look for a specific color (bright blue) on the screen, and will draw on the screen based on the movement of the marker.
 
 ## Scope
-**Regardless of what is said below, the scope is strictly restricted to allowing the user to draw on the screen using a bright blue marker (unless time permits).**
+**Regardless of the additional information below, the scope is strictly restricted to allowing the user to draw on the screen using a bright blue marker (unless time permits).**
 
 ## Application Usage
 The OpenFrameworks application will use the computer's camera using `ofVideoGrabber`. The user will then choose a point on the screen to track. After initialization, the user may move the point around the screen while being tracked.

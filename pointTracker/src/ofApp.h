@@ -5,9 +5,12 @@
 class ofApp : public ofBaseApp{
 	
 	public:
-    bool track_;
-    std::vector<float> previous_points_;
-    std::vector<float> points_;
+        //tracks points for the keyboard line
+        std::vector<float> points_;
+        //a line drawn solely via keyboard
+        ofPolyline keyboard_line_;
+        //a line drawn solely via mouse dragging
+        ofPolyline mouse_line_;
 		void setup();
 		void update();
 		void draw();

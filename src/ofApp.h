@@ -5,16 +5,14 @@
 class ofApp : public ofBaseApp{
 	
 	public:
-        //tracks points for the keyboard line
-        std::vector<float> points_;
         //a line drawn solely via keyboard
-        ofPolyline keyboard_line_;
-        //a line drawn solely via mouse dragging
-        std::vector<ofPolyline> mouse_lines_;
+        std::vector<ofPolyline> user_lines_;
+        ofPolyline *current_line_;
 		void setup();
 		void update();
 		void draw();
-		
+    
+        void newLine();
         void addPoint(int x, int y, std::vector<std::vector<int>> *pointTracker);
 		void keyPressed(int key);
 		void keyReleased(int key);
@@ -31,9 +29,4 @@ class ofApp : public ofBaseApp{
 		ofVideoGrabber 		vidGrabber;
 		int 				camWidth;
 		int 				camHeight;
-    
-        string asciiCharacters;
-        ofTrueTypeFont  font;
-    
-    
 };

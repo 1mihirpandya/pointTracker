@@ -7,8 +7,8 @@ void ofApp::setup(){
     point_onscreen = 0;
     camWidth 		= 640;	// try to grab at this size.
     camHeight 		= 480;
-    user_lines_.push_back(ofPolyline());
-    current_line_ = &user_lines_.back();
+    user_lines_.push_back(new ofPolyline());
+    current_line_ = user_lines_.back();
     ofSetBackgroundAuto(false);
     vidGrabber.setup(camWidth,camHeight);
     ofEnableAlphaBlending();
@@ -25,7 +25,7 @@ void ofApp::draw(){
     vidGrabber.draw(0,0);
     ofPixelsRef screen = vidGrabber.getPixels();
     for (auto line : user_lines_) {
-        line.draw();
+        line->draw();
     }
     
     for (int i = 0; i < camWidth; i+= 1){
@@ -43,25 +43,27 @@ void ofApp::draw(){
         current_line_->draw();
         point_onscreen += 1;
     } else {
-        if (point_onscreen == 5) {
-        newLine();
+        if (point_onscreen == 20) {
+        //newLine();
+        point_onscreen = 21;
         } else {
             point_onscreen += 1;
         }
     }
-    std::cout << point_onscreen << std::endl;
     //    if (track_) {
     //        std::cout << previous_points_[0] << " " << previous_points_[1] << std::endl;
     //        std::cout << points_[0] << " " << points_[1] << std::endl;
     //        std::cout << "" << std::endl;
     //        ofDrawLine(previous_points_[0], previous_points_[1], points_[0], points_[1]);
     //    }
-    
 }
 
 void ofApp::newLine() {
-    user_lines_.push_back(ofPolyline());
-    current_line_ = &(user_lines_.back());
+    //std::cout << "making new line" << std::endl;
+    user_lines_.push_back(new ofPolyline());
+    current_line_ = user_lines_.back();
+    //std::cout << user_lines_.size() << std::endl;
+    //std::cout << "" << std::endl;
 }
 
 void ofApp::addPoint(int x, int y) {
@@ -74,19 +76,14 @@ void ofApp::keyPressed  (int key){
     //updates the point and adds the vertex to the line
     ofPoint point;
     if (key == 'c' || key == 'C'){
-        //delete user_lines_;
-        ofPolyline *line_to_delete;
-        std::cout << user_lines_.size() << std::endl;
-        for (int x = user_lines_.size() - 1; x >= 0; x--) {
-            if (typeid(user_lines_.at(x)) != typeid(ofPolyline)) {
-                std::cout << "not" << std::endl;
-                user_lines_.at(x) = ofPolyline();
-            }
-            line_to_delete = &(user_lines_.at(x));
-            line_to_delete->clear();
+        //ofPolyline *line_to_delete;
+        for (int x = 0; x < user_lines_.size(); x++) {
+            (user_lines_.at(x))->clear();
+            user_lines_.erase(user_lines_.begin() + x);
+            user_lines_.clear();
+            newLine();
             //delete line_to_delete;
         }
-        std::cout << user_lines_.size() << std::endl;
     }
     if (key == 'b' || key == 'B') {
         current_line_->clear();

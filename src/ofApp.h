@@ -6,7 +6,7 @@ class ofApp : public ofBaseApp{
 	
 	public:
         //a line drawn solely via keyboard
-        std::vector<ofPolyline> user_lines_;
+        std::vector<ofPolyline*> user_lines_;
         ofPolyline *current_line_;
         int point_onscreen;
 		void setup();

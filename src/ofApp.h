@@ -8,12 +8,13 @@ class ofApp : public ofBaseApp{
         //a line drawn solely via keyboard
         std::vector<ofPolyline> user_lines_;
         ofPolyline *current_line_;
+        int point_onscreen;
 		void setup();
 		void update();
 		void draw();
     
         void newLine();
-        void addPoint(int x, int y, std::vector<std::vector<int>> *pointTracker);
+        void addPoint(int x, int y);
 		void keyPressed(int key);
 		void keyReleased(int key);
 		void mouseMoved(int x, int y );

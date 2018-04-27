@@ -22,9 +22,14 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
+    //vidGrabber.draw(vidGrabber.getWidth(),0,-vidGrabber.getWidth(),vidGrabber.getHeight());
     vidGrabber.draw(0,0);
     ofPixelsRef screen = vidGrabber.getPixels();
     for (auto line : user_lines_) {
+        //float smoothShape = ofMap(mouseY, 0, ofGetHeight(), 0, 1, true);
+        //int smoothSize = ofMap(mouseX, 0, ofGetWidth(), 0, 32, true);
+        //ofPolyline p = line->getSmoothed(smoothSize, smoothShape);
+        //p.draw();
         line->draw();
     }
     
@@ -44,7 +49,7 @@ void ofApp::draw(){
         point_onscreen += 1;
     } else {
         if (point_onscreen == 20) {
-        //newLine();
+        newLine();
         point_onscreen = 21;
         } else {
             point_onscreen += 1;

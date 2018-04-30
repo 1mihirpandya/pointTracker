@@ -5,8 +5,8 @@ void ofApp::setup(){
     
     ofBackground(0,0,0);
     point_onscreen = 0;
-    camWidth 		= 640;	// try to grab at this size.
-    camHeight 		= 480;
+    camWidth = 640;	// try to grab at this size.
+    camHeight = 480;
     user_lines_.push_back(new ofPolyline());
     current_line_ = user_lines_.back();
     ofSetBackgroundAuto(false);
@@ -18,11 +18,6 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 void ofApp::update(){
     vidGrabber.update();
-}
-
-//--------------------------------------------------------------
-void ofApp::draw(){
-    
     int intended_red = 0;
     int intended_green = 200;
     int intended_blue = 50;
@@ -30,18 +25,7 @@ void ofApp::draw(){
     float min_difference = 255;
     int approx_x = 0;
     int approx_y = 0;
-    
-    //vidGrabber.draw(vidGrabber.getWidth(),0,-vidGrabber.getWidth(),vidGrabber.getHeight());
-    vidGrabber.draw(0,0);
     ofPixelsRef screen = vidGrabber.getPixels();
-    for (auto line : user_lines_) {
-        //float smoothShape = ofMap(mouseY, 0, ofGetHeight(), 0, 1, true);
-        //int smoothSize = ofMap(mouseX, 0, ofGetWidth(), 0, 32, true);
-        //ofPolyline p = line->getSmoothed(smoothSize, smoothShape);
-        //p.draw();
-        line->draw();
-    }
-    
     for (int i = 0; i < camWidth; i+= 1){
         for (int j = 0; j < camHeight; j+= 1){
             ofColor color = screen.getColor(i, j);
@@ -61,9 +45,20 @@ void ofApp::draw(){
             //}
         }
     }
-    if (screen.getColor(approx_x, approx_y).r <= 20 && screen.getColor(approx_x, approx_y).g >= 100 ) {
+    if (screen.getColor(approx_x, approx_y).r <= 20 && screen.getColor(approx_x, approx_y).g >= 70 ) {
         addPoint(approx_x, approx_y);
         point_onscreen = 0;
+    }
+}
+
+//--------------------------------------------------------------
+void ofApp::draw(){
+    
+    
+    vidGrabber.draw(vidGrabber.getWidth(),0,-vidGrabber.getWidth(),vidGrabber.getHeight());
+    //vidGrabber.draw(0,0);
+    for (auto &line : user_lines_) {
+        line->draw();
     }
     
     if (point_onscreen == 0)
@@ -96,7 +91,7 @@ void ofApp::newLine() {
 
 void ofApp::addPoint(int x, int y) {
     ofPoint point;
-    point.set(x,y);
+    point.set(camWidth - x,y);
     current_line_->addVertex(point);
 }
 //--------------------------------------------------------------

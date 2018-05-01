@@ -7,11 +7,18 @@ void ofApp::setup(){
     point_onscreen = 0;
     camWidth = 640;	// try to grab at this size.
     camHeight = 480;
-    user_lines_.push_back(new ofPolyline());
+    user_lines_.push_back(new ofPath());
     current_line_ = user_lines_.back();
-    ofSetBackgroundAuto(false);
+    color_slider_.setup("Pick the line color you want!",ofColor(), ofColor(), 20, 300);
+    current_line_->setMode(ofPath::POLYLINES);
+    current_line_->setFilled(false);
+    current_line_->setStrokeWidth(5);
+    current_line_->setColor(color_slider_);
+    //current_line_->setFilled(false);
+    //ofSetBackgroundAuto(false);
     vidGrabber.setup(camWidth,camHeight);
     ofEnableAlphaBlending();
+    settings_active_ = false;
 }
 
 
@@ -55,12 +62,14 @@ void ofApp::update(){
 void ofApp::draw(){
     
     
-    vidGrabber.draw(vidGrabber.getWidth(),0,-vidGrabber.getWidth(),vidGrabber.getHeight());
-    //vidGrabber.draw(0,0);
+    //vidGrabber.draw(vidGrabber.getWidth(),0,-vidGrabber.getWidth(),vidGrabber.getHeight());
+    vidGrabber.draw(0,0);
+    if (settings_active_){
+    color_slider_.draw();
+    }
     for (auto &line : user_lines_) {
         line->draw();
     }
-    
     if (point_onscreen == 0)
     {
         current_line_->draw();
@@ -83,7 +92,7 @@ void ofApp::draw(){
 
 void ofApp::newLine() {
     //std::cout << "making new line" << std::endl;
-    user_lines_.push_back(new ofPolyline());
+    user_lines_.push_back(new ofPath());
     current_line_ = user_lines_.back();
     //std::cout << user_lines_.size() << std::endl;
     //std::cout << "" << std::endl;
@@ -91,8 +100,12 @@ void ofApp::newLine() {
 
 void ofApp::addPoint(int x, int y) {
     ofPoint point;
-    point.set(camWidth - x,y);
-    current_line_->addVertex(point);
+    point.set(x,y);
+    //current_line_->addVertex(point);
+    current_line_->lineTo(x, y);
+    current_line_->setFilled(false);
+    current_line_->setStrokeWidth(5);
+    current_line_->setColor(color_slider_);
 }
 //--------------------------------------------------------------
 void ofApp::keyPressed  (int key){
@@ -110,6 +123,12 @@ void ofApp::keyPressed  (int key){
     }
     if (key == 'b' || key == 'B') {
         current_line_->clear();
+    }
+    if (key == 's' || key == 'S') {
+        settings_active_ = !settings_active_;
+        if (!settings_active_) {
+            current_line_->setColor(color_slider_);
+        }
     }
 }
 

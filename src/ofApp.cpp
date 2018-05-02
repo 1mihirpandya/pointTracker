@@ -1,16 +1,17 @@
 #include "ofApp.h"
 #include <cmath>
+#include <stdlib.h>
 
 //--------------------------------------------------------------
 void ofApp::setup(){
     
     ofBackground(0,0,0);
     point_onscreen = 0;
-    camWidth = 640;	// try to grab at this size.
-    camHeight = 480;
+    camWidth = 1320;	// try to grab at this size.
+    camHeight = 720;
     user_lines_.push_back(new ofPath());
     current_line_ = user_lines_.back();
-    color_slider_.setup("Pick the line color you want!",ofColor(), ofColor(), 20, 300);
+    color_slider_.setup("Pick the line color you want!", ofColor(), ofColor(), 20, 300);
     current_line_->setMode(ofPath::POLYLINES);
     current_line_->setFilled(false);
     current_line_->setStrokeWidth(5);
@@ -26,6 +27,8 @@ void ofApp::setup(){
     bri.allocate(camWidth, camHeight);
     filtered.allocate(camWidth, camHeight);
     findHue = -1;
+    shape_set_ = true;
+    shape_area_ = {0,0};
 }
 
 
@@ -38,45 +41,72 @@ void ofApp::update(){
         rgb.setFromPixels(vidGrabber.getPixels());
         rgb.resize(camWidth, camHeight);
         rgb.mirror(false, true);
-        hsb = rgb;
-        hsb.convertRgbToHsv();
-        hsb.convertToGrayscalePlanarImages(hue, sat, bri);
         if (findHue > -1) {
-        for (int i=0; i<camWidth * camHeight; i++) {
-            filtered.getPixels()[i] = ofInRange(hue.getPixels()[i],findHue-5,findHue+5) ? 255 : 0;
-        }
-        filtered.flagImageChanged();
-        //run the contour finder on the filtered image to find blobs with a certain hue
-        contours.findContours(filtered, 50, camWidth * camHeight/2, 1, false);
-        float min_difference = 255;
-        int approx_x = -1;
-        int approx_y = -1;
-        ofPixelsRef screen = vidGrabber.getPixels();
-        for (int i=0; i<contours.nBlobs; i++) {
-                    ofColor color = screen.getColor(contours.blobs[i].centroid.x, contours.blobs[i].centroid.y);
-                    float r_difference = color.r - targetColor.r;
-                    float g_difference = color.g - targetColor.g;
-                    float b_difference = color.b - targetColor.b;
-                    float color_difference = sqrt(r_difference * r_difference + r_difference * r_difference + r_difference * r_difference);
-                    if(color_difference < min_difference){
-                        min_difference = color_difference;
-                        approx_x = contours.blobs[i].centroid.x;
-                        approx_y = contours.blobs[i].centroid.y;
-                    }
-        }
+            findPoint();
+            std::vector<int> approximate_points = applyEuclidianFormula();
+            int approx_x = approximate_points.front();
+            int approx_y = approximate_points.back();
             if (approx_x > -1 && approx_y > -1) {
+                if (shape_set_) {
         addPoint(approx_x, approx_y);
         point_onscreen = 0;
+                }
+                current_points_ = approximate_points;
             }
+            approximate_points.erase(approximate_points.begin(), approximate_points.end());
+        }
+        if (!shape_set_) {
+            user_lines_.pop_back();
+            delete current_line_;
+            current_line_ = user_lines_.back();
+            newShape();
+            if (shape_area_.at(0) > 0 && std::abs(shape_area_.at(1) - shape_area_.at(0)) > 300) {
+                shape_set_ = true;
+                newLine();
+            }
+            point_onscreen = 0;
         }
     }
 }
 
+std::vector<int> ofApp::applyEuclidianFormula() {
+    float min_difference = 255;
+    int approx_x = -1;
+    int approx_y = -1;
+    ofPixelsRef screen = vidGrabber.getPixels();
+    for (int i=0; i<contours.nBlobs; i++) {
+        ofColor color = screen.getColor(contours.blobs[i].centroid.x, contours.blobs[i].centroid.y);
+        float r_difference = color.r - targetColor.r;
+        float g_difference = color.g - targetColor.g;
+        float b_difference = color.b - targetColor.b;
+        float color_difference = sqrt(r_difference * r_difference + r_difference * r_difference + r_difference * r_difference);
+        if(color_difference < min_difference){
+            min_difference = color_difference;
+            approx_x = contours.blobs[i].centroid.x;
+            approx_y = contours.blobs[i].centroid.y;
+            shape_area_.at(0) = shape_area_.at(1);
+            shape_area_.at(1) = contours.blobs[i].area;
+            std::cout << shape_area_.at(0) << "  " << shape_area_.at(1) << std::endl;
+        }
+    }
+    return {approx_x, approx_y};
+}
+
+void ofApp::findPoint() {
+    hsb = rgb;
+    hsb.convertRgbToHsv();
+    hsb.convertToGrayscalePlanarImages(hue, sat, bri);
+    
+        for (int i = 0; i < camWidth * camHeight; i++) {
+            filtered.getPixels()[i] = ofInRange(hue.getPixels()[i],findHue-5,findHue+5) ? 255 : 0;
+        }
+        filtered.flagImageChanged();
+    contours.findContours(filtered, 50, camWidth * camHeight/2, 1, false);
+}
+
+
 //--------------------------------------------------------------
 void ofApp::draw(){
-    
-    
-    //vidGrabber.draw(vidGrabber.getWidth(),0,-vidGrabber.getWidth(),vidGrabber.getHeight());
     rgb.draw(0,0);
     if (settings_active_){
         color_slider_.draw();
@@ -116,6 +146,16 @@ void ofApp::addPoint(int x, int y) {
     current_line_->setStrokeWidth(5);
     current_line_->setColor(color_slider_);
 }
+
+void ofApp::newShape() {
+    newLine();
+    current_line_->rectangle(current_points_.at(0), current_points_.at(1), 100, 100);
+    current_line_->setFilled(true);
+    current_line_->setColor(color_slider_);
+    std::cout << "Worked" << std::endl;
+    shape_set_ = false;
+    //newLine();
+}
 //--------------------------------------------------------------
 void ofApp::keyPressed  (int key){
     //updates the point and adds the vertex to the line
@@ -128,27 +168,19 @@ void ofApp::keyPressed  (int key){
             newLine();
         }
     }
-    if (key == 'b' || key == 'B') {
+    else if (key == 'b' || key == 'B') {
         current_line_->clear();
     }
-    if (key == 's' || key == 'S') {
+    else if (key == 's' || key == 'S') {
         settings_active_ = !settings_active_;
         if (!settings_active_) {
             current_line_->setColor(color_slider_);
         }
+    } else if (key == 'r' || key == 'R') {
+        //ofPath *rectangle;
+        //rectangle->rectangle(18, 20, 70, 100);
+        newShape();
     }
-}
-
-//--------------------------------------------------------------
-void ofApp::keyReleased(int key){ 
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseMoved(int x, int y ){
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseDragged(int x, int y, int button){
 }
 
 //--------------------------------------------------------------
@@ -157,9 +189,21 @@ void ofApp::mousePressed(int x, int y, int button){
     //calculate local mouse x,y in image
     int mx = x % camWidth;
     int my = y % camHeight;
-    targetColor = vidGrabber.getPixels().getColor(mx, my);
     //get hue value on mouse position
     findHue = hue.getPixels()[my * camWidth + mx];
+    targetColor = rgb.getPixels().getColor(mx, my);
+}
+
+//--------------------------------------------------------------
+void ofApp::windowResized(int w, int h){
+    camWidth = w;
+    camHeight = h;
+    rgb.allocate(camWidth, camHeight);
+    hsb.allocate(camWidth, camHeight);
+    hue.allocate(camWidth, camHeight);
+    sat.allocate(camWidth, camHeight);
+    bri.allocate(camWidth, camHeight);
+    filtered.allocate(camWidth, camHeight);
 }
 
 //--------------------------------------------------------------
@@ -174,11 +218,6 @@ void ofApp::mouseEntered(int x, int y){
 void ofApp::mouseExited(int x, int y){
 }
 
-//--------------------------------------------------------------
-void ofApp::windowResized(int w, int h){
-    camWidth = w;
-    camHeight = h;
-}
 
 //--------------------------------------------------------------
 void ofApp::gotMessage(ofMessage msg){
@@ -186,4 +225,16 @@ void ofApp::gotMessage(ofMessage msg){
 
 //--------------------------------------------------------------
 void ofApp::dragEvent(ofDragInfo dragInfo){
+}
+
+//--------------------------------------------------------------
+void ofApp::keyReleased(int key){
+}
+
+//--------------------------------------------------------------
+void ofApp::mouseMoved(int x, int y ){
+}
+
+//--------------------------------------------------------------
+void ofApp::mouseDragged(int x, int y, int button){
 }

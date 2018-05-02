@@ -21,10 +21,16 @@ class ofApp : public ofBaseApp{
     ofxCvGrayscaleImage hue,sat,bri,filtered;
     ofxCvContourFinder contours;
     int findHue;
+    bool shape_set_;
+    std::vector<int> current_points_;
+    std::vector<float> shape_area_;
 public:
     //a line drawn solely via keyboard
     void setup();
     void update();
+    std::vector<int> applyEuclidianFormula();
+    void newShape();
+    void findPoint();
     void draw();
     void newLine();
     void addPoint(int x, int y);

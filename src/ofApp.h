@@ -24,12 +24,13 @@ class ofApp : public ofBaseApp{
     bool shape_set_;
     std::vector<int> current_points_;
     std::vector<float> shape_area_;
+    char shape_type;
 public:
     //a line drawn solely via keyboard
     void setup();
     void update();
     std::vector<int> applyEuclidianFormula();
-    void newShape();
+    void newShape(char c);
     void findPoint();
     void draw();
     void newLine();

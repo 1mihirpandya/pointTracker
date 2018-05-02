@@ -12,6 +12,7 @@ void ofApp::setup(){
     user_lines_.push_back(new ofPath());
     current_line_ = user_lines_.back();
     color_slider_.setup("Pick the line color you want!", ofColor(), ofColor(), 20, 300);
+    color_slider_.setShape(0, 70, 250, 100);
     current_line_->setMode(ofPath::POLYLINES);
     current_line_->setFilled(false);
     current_line_->setStrokeWidth(5);
@@ -59,7 +60,7 @@ void ofApp::update(){
             user_lines_.pop_back();
             delete current_line_;
             current_line_ = user_lines_.back();
-            newShape();
+            newShape(shape_type);
             if (shape_area_.at(0) > 0 && std::abs(shape_area_.at(1) - shape_area_.at(0)) > 300) {
                 shape_set_ = true;
                 newLine();
@@ -116,7 +117,7 @@ void ofApp::draw(){
     }
     if (point_onscreen == 0)
     {
-        current_line_->draw();
+        //current_line_->draw();
         point_onscreen += 1;
     } else {
         if (point_onscreen == 20) {
@@ -147,20 +148,30 @@ void ofApp::addPoint(int x, int y) {
     current_line_->setColor(color_slider_);
 }
 
-void ofApp::newShape() {
+void ofApp::newShape(char c) {
     newLine();
+    if (c == 'r') {
     current_line_->rectangle(current_points_.at(0), current_points_.at(1), 100, 100);
+        shape_type = 'r';
+    } else if (c == 'c') {
+        current_line_->circle(current_points_.at(0), current_points_.at(1), 50);
+        shape_type = 'c';
+    } else if (c == 't') {
+        int x = current_points_.at(0);
+        int y = current_points_.at(1);
+        current_line_->triangle(x, y, x - 50, y + 50, x + 50, y + 50);
+        shape_type = 't';
+        //current_line_->rectangle(current_points_.at(0), current_points_.at(1), 100, 100);
+    }
     current_line_->setFilled(true);
     current_line_->setColor(color_slider_);
-    std::cout << "Worked" << std::endl;
     shape_set_ = false;
-    //newLine();
 }
 //--------------------------------------------------------------
 void ofApp::keyPressed  (int key){
     //updates the point and adds the vertex to the line
     ofPoint point;
-    if (key == 'c' || key == 'C'){
+    if (key == 'd' || key == 'D'){
         for (int x = 0; x < user_lines_.size(); x++) {
             (user_lines_.at(x))->clear();
             user_lines_.erase(user_lines_.begin() + x);
@@ -177,9 +188,11 @@ void ofApp::keyPressed  (int key){
             current_line_->setColor(color_slider_);
         }
     } else if (key == 'r' || key == 'R') {
-        //ofPath *rectangle;
-        //rectangle->rectangle(18, 20, 70, 100);
-        newShape();
+        newShape('r');
+    } else if (key == 'c' || key == 'C') {
+        newShape('c');
+    } else if (key == 't' || key == 'T') {
+        newShape('t');
     }
 }
 

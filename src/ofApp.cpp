@@ -1,4 +1,5 @@
 #include "ofApp.h"
+#include <cmath>
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -14,47 +15,60 @@ void ofApp::setup(){
     current_line_->setFilled(false);
     current_line_->setStrokeWidth(5);
     current_line_->setColor(color_slider_);
-    //current_line_->setFilled(false);
-    //ofSetBackgroundAuto(false);
+    ofSetBackgroundAuto(false);
     vidGrabber.setup(camWidth,camHeight);
     ofEnableAlphaBlending();
     settings_active_ = false;
+    rgb.allocate(camWidth, camHeight);
+    hsb.allocate(camWidth, camHeight);
+    hue.allocate(camWidth, camHeight);
+    sat.allocate(camWidth, camHeight);
+    bri.allocate(camWidth, camHeight);
+    filtered.allocate(camWidth, camHeight);
+    findHue = -1;
 }
 
 
 //--------------------------------------------------------------
+//http://beriomolina.com/Tracking-colors-tracking-laser/
+//https://sites.google.com/site/ofauckland/examples/10-testing
 void ofApp::update(){
     vidGrabber.update();
-    int intended_red = 0;
-    int intended_green = 200;
-    int intended_blue = 50;
-    
-    float min_difference = 255;
-    int approx_x = 0;
-    int approx_y = 0;
-    ofPixelsRef screen = vidGrabber.getPixels();
-    for (int i = 0; i < camWidth; i+= 1){
-        for (int j = 0; j < camHeight; j+= 1){
-            ofColor color = screen.getColor(i, j);
-            float r_difference = color.r - intended_red;
-            float g_difference = color.g - intended_green;
-            float b_difference = color.b - intended_blue;
-            float color_difference = sqrt(r_difference * r_difference + r_difference * r_difference + r_difference * r_difference);
-            if(color_difference < min_difference){
-                min_difference = color_difference;
-                approx_x = i;
-                approx_y = j;
-            }
-            //if (color.r <= 20 && color.g >= 100 ) {
-            //    addPoint(i,j);
-            //    point_onscreen = 0;
-            //    break;
-            //}
+    if (vidGrabber.isFrameNew()) {
+        rgb.setFromPixels(vidGrabber.getPixels());
+        rgb.resize(camWidth, camHeight);
+        rgb.mirror(false, true);
+        hsb = rgb;
+        hsb.convertRgbToHsv();
+        hsb.convertToGrayscalePlanarImages(hue, sat, bri);
+        if (findHue > -1) {
+        for (int i=0; i<camWidth * camHeight; i++) {
+            filtered.getPixels()[i] = ofInRange(hue.getPixels()[i],findHue-5,findHue+5) ? 255 : 0;
         }
-    }
-    if (screen.getColor(approx_x, approx_y).r <= 20 && screen.getColor(approx_x, approx_y).g >= 70 ) {
+        filtered.flagImageChanged();
+        //run the contour finder on the filtered image to find blobs with a certain hue
+        contours.findContours(filtered, 50, camWidth * camHeight/2, 1, false);
+        float min_difference = 255;
+        int approx_x = -1;
+        int approx_y = -1;
+        ofPixelsRef screen = vidGrabber.getPixels();
+        for (int i=0; i<contours.nBlobs; i++) {
+                    ofColor color = screen.getColor(contours.blobs[i].centroid.x, contours.blobs[i].centroid.y);
+                    float r_difference = color.r - targetColor.r;
+                    float g_difference = color.g - targetColor.g;
+                    float b_difference = color.b - targetColor.b;
+                    float color_difference = sqrt(r_difference * r_difference + r_difference * r_difference + r_difference * r_difference);
+                    if(color_difference < min_difference){
+                        min_difference = color_difference;
+                        approx_x = contours.blobs[i].centroid.x;
+                        approx_y = contours.blobs[i].centroid.y;
+                    }
+        }
+            if (approx_x > -1 && approx_y > -1) {
         addPoint(approx_x, approx_y);
         point_onscreen = 0;
+            }
+        }
     }
 }
 
@@ -63,9 +77,9 @@ void ofApp::draw(){
     
     
     //vidGrabber.draw(vidGrabber.getWidth(),0,-vidGrabber.getWidth(),vidGrabber.getHeight());
-    vidGrabber.draw(0,0);
+    rgb.draw(0,0);
     if (settings_active_){
-    color_slider_.draw();
+        color_slider_.draw();
     }
     for (auto &line : user_lines_) {
         line->draw();
@@ -82,26 +96,21 @@ void ofApp::draw(){
             point_onscreen += 1;
         }
     }
-    //    if (track_) {
-    //        std::cout << previous_points_[0] << " " << previous_points_[1] << std::endl;
-    //        std::cout << points_[0] << " " << points_[1] << std::endl;
-    //        std::cout << "" << std::endl;
-    //        ofDrawLine(previous_points_[0], previous_points_[1], points_[0], points_[1]);
-    //    }
+    ofPath x;
+    x.setFilled(true);
+    x.setColor(targetColor);
+    x.rectangle(0, 0, 64, 64);
+    x.draw();
 }
 
 void ofApp::newLine() {
-    //std::cout << "making new line" << std::endl;
     user_lines_.push_back(new ofPath());
     current_line_ = user_lines_.back();
-    //std::cout << user_lines_.size() << std::endl;
-    //std::cout << "" << std::endl;
 }
 
 void ofApp::addPoint(int x, int y) {
     ofPoint point;
     point.set(x,y);
-    //current_line_->addVertex(point);
     current_line_->lineTo(x, y);
     current_line_->setFilled(false);
     current_line_->setStrokeWidth(5);
@@ -112,13 +121,11 @@ void ofApp::keyPressed  (int key){
     //updates the point and adds the vertex to the line
     ofPoint point;
     if (key == 'c' || key == 'C'){
-        //ofPolyline *line_to_delete;
         for (int x = 0; x < user_lines_.size(); x++) {
             (user_lines_.at(x))->clear();
             user_lines_.erase(user_lines_.begin() + x);
             user_lines_.clear();
             newLine();
-            //delete line_to_delete;
         }
     }
     if (key == 'b' || key == 'B') {
@@ -146,6 +153,13 @@ void ofApp::mouseDragged(int x, int y, int button){
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
+    std::cout << targetColor << std::endl;
+    //calculate local mouse x,y in image
+    int mx = x % camWidth;
+    int my = y % camHeight;
+    targetColor = vidGrabber.getPixels().getColor(mx, my);
+    //get hue value on mouse position
+    findHue = hue.getPixels()[my * camWidth + mx];
 }
 
 //--------------------------------------------------------------

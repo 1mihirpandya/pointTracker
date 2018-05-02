@@ -15,6 +15,12 @@ class ofApp : public ofBaseApp{
     ofxColorSlider color_slider_;
     bool settings_active_;
     std::vector<int> line_color_;
+    ofColor targetColor;
+    ofPoint tester;
+    ofxCvColorImage rgb,hsb;
+    ofxCvGrayscaleImage hue,sat,bri,filtered;
+    ofxCvContourFinder contours;
+    int findHue;
 public:
     //a line drawn solely via keyboard
     void setup();

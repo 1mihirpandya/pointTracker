@@ -3,6 +3,8 @@
 #include "ofMain.h"
 #include "ofxGui.h"
 #include "ofxOpenCv.h"
+#include <cmath>
+#include <stdlib.h>
 
 class ofApp : public ofBaseApp{
     
@@ -28,21 +30,15 @@ public:
     //a line drawn solely via keyboard
     void setup();
     void update();
+    void setupTrackingFunctionality(int width, int height);
+    void setupDrawingFunctionality();
     std::vector<int> applyEuclidianFormula();
-    void newShape(char c);
+    void newShape(char shape_type);
     void findPoint();
     void draw();
     void newLine();
     void addPoint(int x, int y);
     void keyPressed(int key);
-    void keyReleased(int key);
-    void mouseMoved(int x, int y );
-    void mouseDragged(int x, int y, int button);
     void mousePressed(int x, int y, int button);
-    void mouseReleased(int x, int y, int button);
-    void mouseEntered(int x, int y);
-    void mouseExited(int x, int y);
     void windowResized(int w, int h);
-    void dragEvent(ofDragInfo dragInfo);
-    void gotMessage(ofMessage msg);
 };

@@ -1,37 +1,42 @@
 #include "ofApp.h"
-#include <cmath>
-#include <stdlib.h>
 
 //--------------------------------------------------------------
 void ofApp::setup(){
     
     ofBackground(0,0,0);
-    point_onscreen_ = 0;
-    width_ = 1320;	// try to grab at this size.
-    height_ = 720;
-    user_lines_.push_back(new ofPath());
-    current_line_ = user_lines_.back();
-    color_slider_.setup("Pick the line color you want!", ofColor(), ofColor(), 20, 300);
-    color_slider_.setShape(0, 70, 250, 100);
-    current_line_->setMode(ofPath::POLYLINES);
-    current_line_->setFilled(false);
-    current_line_->setStrokeWidth(5);
-    current_line_->setColor(color_slider_);
     ofSetBackgroundAuto(false);
-    video_.setup(width_,height_);
     ofEnableAlphaBlending();
-    settings_active_ = false;
-    rgb_image_.allocate(width_, height_);
-    hsb_image_.allocate(width_, height_);
-    hue_image_.allocate(width_, height_);
-    saturation_image_.allocate(width_, height_);
-    brightness_image_.allocate(width_, height_);
-    filtered_image_.allocate(width_, height_);
+    width_ = 1320;
+    height_ = 720;
+    video_.setup(width_,height_);
+    setupTrackingFunctionality(width_, height_);
+    setupDrawingFunctionality();
+}
+
+void ofApp::setupTrackingFunctionality(int width, int height) {
+    rgb_image_.allocate(width, height);
+    hsb_image_.allocate(width, height);
+    hue_image_.allocate(width, height);
+    saturation_image_.allocate(width, height);
+    brightness_image_.allocate(width, height);
+    filtered_image_.allocate(width, height);
+    point_onscreen_ = 0;
     target_hue_ = -1;
     shape_set_ = true;
     shape_area_ = {0,0};
 }
 
+void ofApp::setupDrawingFunctionality() {
+    user_lines_.push_back(new ofPath());
+    current_line_ = user_lines_.back();
+    current_line_->setMode(ofPath::POLYLINES);
+    current_line_->setFilled(false);
+    current_line_->setStrokeWidth(5);
+    current_line_->setColor(color_slider_);
+    color_slider_.setup("Pick the line color you want!", ofColor(), ofColor(), 20, 300);
+    color_slider_.setShape(0, 70, 250, 100);
+    settings_active_ = false;
+}
 
 //--------------------------------------------------------------
 //http://beriomolina.com/Tracking-colors-tracking-laser/
@@ -49,8 +54,8 @@ void ofApp::update(){
             int approx_y = approximate_points.back();
             if (approx_x > -1 && approx_y > -1) {
                 if (shape_set_) {
-        addPoint(approx_x, approx_y);
-        point_onscreen_ = 0;
+                    addPoint(approx_x, approx_y);
+                    point_onscreen_ = 0;
                 }
                 current_points_ = approximate_points;
             }
@@ -98,10 +103,10 @@ void ofApp::findPoint() {
     hsb_image_.convertRgbToHsv();
     hsb_image_.convertToGrayscalePlanarImages(hue_image_, saturation_image_, brightness_image_);
     
-        for (int i = 0; i < width_ * height_; i++) {
-            filtered_image_.getPixels()[i] = ofInRange(hue_image_.getPixels()[i],target_hue_-5,target_hue_+5) ? 255 : 0;
-        }
-        filtered_image_.flagImageChanged();
+    for (int i = 0; i < width_ * height_; i++) {
+        filtered_image_.getPixels()[i] = ofInRange(hue_image_.getPixels()[i],target_hue_-5,target_hue_+5) ? 255 : 0;
+    }
+    filtered_image_.flagImageChanged();
     contours_.findContours(filtered_image_, 50, width_ * height_/2, 1, false);
 }
 
@@ -148,25 +153,23 @@ void ofApp::addPoint(int x, int y) {
     current_line_->setColor(color_slider_);
 }
 
-void ofApp::newShape(char c) {
+void ofApp::newShape(char shape_type) {
     newLine();
-    if (c == 'r') {
-    current_line_->rectangle(current_points_.at(0), current_points_.at(1), 100, 100);
-        shape_type_ = 'r';
-    } else if (c == 'c') {
+    if (shape_type == 'r') {
+        current_line_->rectangle(current_points_.at(0), current_points_.at(1), 100, 100);
+    } else if (shape_type == 'c') {
         current_line_->circle(current_points_.at(0), current_points_.at(1), 50);
-        shape_type_ = 'c';
-    } else if (c == 't') {
+    } else if (shape_type == 't') {
         int x = current_points_.at(0);
         int y = current_points_.at(1);
         current_line_->triangle(x, y, x - 50, y + 50, x + 50, y + 50);
-        shape_type_ = 't';
-        //current_line_->rectangle(current_points_.at(0), current_points_.at(1), 100, 100);
     }
+    shape_type_ = shape_type;
     current_line_->setFilled(true);
     current_line_->setColor(color_slider_);
     shape_set_ = false;
 }
+
 //--------------------------------------------------------------
 void ofApp::keyPressed  (int key){
     //updates the point and adds the vertex to the line
@@ -198,56 +201,17 @@ void ofApp::keyPressed  (int key){
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-    std::cout << target_color_ << std::endl;
     //calculate local mouse x,y in image
-    int mx = x % width_;
-    int my = y % height_;
+    int scaled_x = x % width_;
+    int scaled_y = y % height_;
     //get hue_image_ value on mouse position
-    target_hue_ = hue_image_.getPixels()[my * width_ + mx];
-    target_color_ = rgb_image_.getPixels().getColor(mx, my);
+    target_hue_ = hue_image_.getPixels()[scaled_y * width_ + scaled_x];
+    target_color_ = rgb_image_.getPixels().getColor(scaled_x, scaled_y);
 }
 
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h){
     width_ = w;
     height_ = h;
-    rgb_image_.allocate(width_, height_);
-    hsb_image_.allocate(width_, height_);
-    hue_image_.allocate(width_, height_);
-    saturation_image_.allocate(width_, height_);
-    brightness_image_.allocate(width_, height_);
-    filtered_image_.allocate(width_, height_);
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseReleased(int x, int y, int button){
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseEntered(int x, int y){
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseExited(int x, int y){
-}
-
-
-//--------------------------------------------------------------
-void ofApp::gotMessage(ofMessage msg){
-}
-
-//--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo){
-}
-
-//--------------------------------------------------------------
-void ofApp::keyReleased(int key){
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseMoved(int x, int y ){
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseDragged(int x, int y, int button){
+    setupTrackingFunctionality(w, h);
 }

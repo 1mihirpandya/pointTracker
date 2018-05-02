@@ -8,23 +8,22 @@ class ofApp : public ofBaseApp{
     
     std::vector<ofPath*> user_lines_;
     ofPath *current_line_;
-    int point_onscreen;
-    ofVideoGrabber vidGrabber;
-    int camWidth;
-    int camHeight;
+    int point_onscreen_;
+    ofVideoGrabber video_;
+    int width_;
+    int height_;
     ofxColorSlider color_slider_;
     bool settings_active_;
     std::vector<int> line_color_;
-    ofColor targetColor;
-    ofPoint tester;
-    ofxCvColorImage rgb,hsb;
-    ofxCvGrayscaleImage hue,sat,bri,filtered;
-    ofxCvContourFinder contours;
-    int findHue;
+    ofColor target_color_;
+    ofxCvColorImage rgb_image_,hsb_image_;
+    ofxCvGrayscaleImage hue_image_,saturation_image_,brightness_image_,filtered_image_;
+    ofxCvContourFinder contours_;
+    int target_hue_;
     bool shape_set_;
     std::vector<int> current_points_;
     std::vector<float> shape_area_;
-    char shape_type;
+    char shape_type_;
 public:
     //a line drawn solely via keyboard
     void setup();

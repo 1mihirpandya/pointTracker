@@ -122,7 +122,6 @@ void ofApp::draw(){
     }
     if (point_onscreen_ == 0)
     {
-        //current_line_->draw();
         point_onscreen_ += 1;
     } else {
         if (point_onscreen_ == 20) {
@@ -132,11 +131,11 @@ void ofApp::draw(){
             point_onscreen_ += 1;
         }
     }
-    ofPath x;
-    x.setFilled(true);
-    x.setColor(target_color_);
-    x.rectangle(0, 0, 64, 64);
-    x.draw();
+    ofPath color_picker;
+    color_picker.setFilled(true);
+    color_picker.setColor(target_color_);
+    color_picker.rectangle(0, 0, 64, 64);
+    color_picker.draw();
 }
 
 void ofApp::newLine() {

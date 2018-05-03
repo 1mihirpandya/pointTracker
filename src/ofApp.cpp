@@ -3,6 +3,7 @@
 //
 // SETUP METHODS
 //
+
 /*
  * Sets up the application GUI and base functionality.
  */
@@ -10,8 +11,8 @@ void ofApp::setup(){
     ofBackground(0,0,0);
     ofSetBackgroundAuto(false);
     ofEnableAlphaBlending();
-    width_ = 1320;
-    height_ = 720;
+    width_ = default_width;
+    height_ = default_height;
     video_.setup(width_,height_);
     setupTrackingFunctionality(width_, height_);
     setupDrawingFunctionality();
@@ -30,7 +31,7 @@ void ofApp::setupTrackingFunctionality(int width, int height) {
     missing_point_frame_counter_ = 0;
     target_hue_ = -1;
     set_shape_ = true;
-    shape_area_ = {0,0};
+    shape_area_ = {0, 0};
 }
 
 /*
@@ -42,7 +43,7 @@ void ofApp::setupDrawingFunctionality() {
     current_object_ = user_objects_.back();
     current_object_->setMode(ofPath::POLYLINES);
     current_object_->setFilled(false);
-    current_object_->setStrokeWidth(5);
+    current_object_->setStrokeWidth(line_width);
     current_object_->setColor(color_slider_);
     color_slider_.setup("Pick the line color you want!", ofColor(), ofColor(), 20, 300);
     color_slider_.setShape(0, 70, 250, 100);
@@ -69,9 +70,9 @@ void ofApp::draw(){
     {
         missing_point_frame_counter_ += 1;
     } else {
-        if (missing_point_frame_counter_ == 20) {
+        if (missing_point_frame_counter_ == max_missing_point_counter) {
             newObject();
-            missing_point_frame_counter_ = 21;
+            missing_point_frame_counter_ = max_missing_point_counter + 1;
         } else {
             missing_point_frame_counter_ += 1;
         }
@@ -79,7 +80,7 @@ void ofApp::draw(){
     ofPath color_picker;
     color_picker.setFilled(true);
     color_picker.setColor(target_color_);
-    color_picker.rectangle(0, 0, 64, 64);
+    color_picker.rectangle(0, 0, color_picker_size, color_picker_size);
     color_picker.draw();
 }
 
@@ -96,14 +97,14 @@ void ofApp::newObject() {
  */
 void ofApp::newShape(char shape_type) {
     newObject();
-    if (shape_type == 'r') {
-        current_object_->rectangle(current_points_.at(0), current_points_.at(1), 100, 100);
-    } else if (shape_type == 'c') {
-        current_object_->circle(current_points_.at(0), current_points_.at(1), 50);
-    } else if (shape_type == 't') {
+    if (shape_type == rectangle) {
+        current_object_->rectangle(current_points_.at(0), current_points_.at(1), rectangle_width, rectangle_height);
+    } else if (shape_type == circle) {
+        current_object_->circle(current_points_.at(0), current_points_.at(1), circle_radius);
+    } else if (shape_type == triangle) {
         int x = current_points_.at(0);
         int y = current_points_.at(1);
-        current_object_->triangle(x, y, x - 50, y + 50, x + 50, y + 50);
+        current_object_->triangle(x, y, x - triangle_offset, y + triangle_offset, x + triangle_offset, y + triangle_offset);
     }
     shape_type_ = shape_type;
     current_object_->setFilled(true);
@@ -119,7 +120,7 @@ void ofApp::addPoint(int x, int y) {
     point.set(x,y);
     current_object_->lineTo(x, y);
     current_object_->setFilled(false);
-    current_object_->setStrokeWidth(5);
+    current_object_->setStrokeWidth(line_width);
     current_object_->setColor(color_slider_);
 }
 
@@ -131,7 +132,7 @@ void ofApp::setShape() {
     delete current_object_;
     current_object_ = user_objects_.back();
     newShape(shape_type_);
-    if (shape_area_.at(0) > 0 && std::abs(shape_area_.at(1) - shape_area_.at(0)) > 300) {
+    if (shape_area_.at(0) > 0 && std::abs(shape_area_.at(1) - shape_area_.at(0)) > depth_threshold) {
         set_shape_ = true;
         newObject();
     }
@@ -185,14 +186,14 @@ void ofApp::findPotentialPoints() {
     hsb_image_.convertRgbToHsv();
     hsb_image_.convertToGrayscalePlanarImages(hue_image_, saturation_image_, brightness_image_);
     for (int i = 0; i < width_ * height_; i++) {
-        if (ofInRange(hue_image_.getPixels()[i],target_hue_ - 5,target_hue_ + 5)) {
+        if (ofInRange(hue_image_.getPixels()[i],target_hue_ - hue_threshold, target_hue_ + hue_threshold)) {
             filtered_image_.getPixels()[i] = 255;
         } else {
             filtered_image_.getPixels()[i] = 0;
         }
     }
     filtered_image_.flagImageChanged();
-    contours_.findContours(filtered_image_, 50, width_ * height_ / 2, 1, false);
+    contours_.findContours(filtered_image_, min_contour_area, width_ * height_ / 2, 1, false);
 }
 
 /*
@@ -204,7 +205,7 @@ std::vector<int> ofApp::applyEuclidianFormula() {
     int approx_x = -1;
     int approx_y = -1;
     ofPixelsRef screen = video_.getPixels();
-    for (int i=0; i<contours_.nBlobs; i++) {
+    for (int i = 0; i < contours_.nBlobs; i++) {
         ofColor color = screen.getColor(contours_.blobs[i].centroid.x, contours_.blobs[i].centroid.y);
         float r_difference = color.r - target_color_.r;
         float g_difference = color.g - target_color_.g;
@@ -216,7 +217,6 @@ std::vector<int> ofApp::applyEuclidianFormula() {
             approx_y = contours_.blobs[i].centroid.y;
             shape_area_.at(0) = shape_area_.at(1);
             shape_area_.at(1) = contours_.blobs[i].area;
-            std::cout << shape_area_.at(0) << "  " << shape_area_.at(1) << std::endl;
         }
     }
     return {approx_x, approx_y};
@@ -250,11 +250,11 @@ void ofApp::keyPressed(int key){
             current_object_->setColor(color_slider_);
         }
     } else if (key == 'r' || key == 'R') {
-        newShape('r');
+        newShape(rectangle);
     } else if (key == 'c' || key == 'C') {
-        newShape('c');
+        newShape(circle);
     } else if (key == 't' || key == 'T') {
-        newShape('t');
+        newShape(triangle);
     }
 }
 

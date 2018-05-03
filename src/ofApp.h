@@ -30,6 +30,7 @@ class ofApp : public ofBaseApp{
     int target_hue_;
     bool set_shape_;
     char shape_type_;
+    
 public:
     //functions that set up the application
     void setup();
@@ -49,4 +50,20 @@ public:
     void keyPressed(int key);
     void mousePressed(int x, int y, int button);
     void windowResized(int w, int h);
+    //constants
+    const int color_picker_size = 64;
+    const int max_missing_point_counter = 20;
+    const int rectangle_height = 100;
+    const int rectangle_width = 50;
+    const int circle_radius = 50;
+    const int triangle_offset = 50;
+    const int depth_threshold = 300;
+    const int hue_threshold = 5;
+    const int line_width = 5;
+    const int min_contour_area = 50;
+    const int default_height = 720;
+    const int default_width = 1320;
+    char rectangle = 'r';
+    char circle = 'c';
+    char triangle = 't';
 };

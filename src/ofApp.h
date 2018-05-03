@@ -10,8 +10,8 @@ class ofApp : public ofBaseApp{
     int width_;
     int height_;
     //variables related to drawing
-    std::vector<ofPath*> user_lines_;
-    ofPath *current_line_;
+    std::vector<ofPath*> user_objects_;
+    ofPath *current_object_;
     ofxColorSlider color_slider_;
     bool settings_active_;
     //variables related to video and point tracking
@@ -26,9 +26,9 @@ class ofApp : public ofBaseApp{
     ofxCvGrayscaleImage filtered_image_;
     ofxCvContourFinder contours_;
     ofColor target_color_;
-    int point_onscreen_;
+    int missing_point_frame_counter_;
     int target_hue_;
-    bool shape_set_;
+    bool set_shape_;
     char shape_type_;
 public:
     //functions that set up the application
@@ -37,13 +37,13 @@ public:
     void setupDrawingFunctionality();
     //drawing/line editing functions
     void draw();
-    void newLine();
+    void newObject();
     void newShape(char shape_type);
     void addPoint(int x, int y);
     void setShape();
     //point tracking functions
     void update();
-    void findPoint();
+    void findPotentialPoints();
     std::vector<int> applyEuclidianFormula();
     //built in functions used in the application
     void keyPressed(int key);

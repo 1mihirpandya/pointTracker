@@ -27,23 +27,23 @@ void ofApp::setupTrackingFunctionality(int width, int height) {
     saturation_image_.allocate(width, height);
     brightness_image_.allocate(width, height);
     filtered_image_.allocate(width, height);
-    point_onscreen_ = 0;
+    missing_point_frame_counter_ = 0;
     target_hue_ = -1;
-    shape_set_ = true;
+    set_shape_ = true;
     shape_area_ = {0,0};
 }
 
 /*
- * Set up the user_lines_ and current_line_ to allow the user to draw.
+ * Set up the user_objects_ and current_object_ to allow the user to draw.
  * Also sets up the color slider so users can pick their drawing color.
  */
 void ofApp::setupDrawingFunctionality() {
-    user_lines_.push_back(new ofPath());
-    current_line_ = user_lines_.back();
-    current_line_->setMode(ofPath::POLYLINES);
-    current_line_->setFilled(false);
-    current_line_->setStrokeWidth(5);
-    current_line_->setColor(color_slider_);
+    user_objects_.push_back(new ofPath());
+    current_object_ = user_objects_.back();
+    current_object_->setMode(ofPath::POLYLINES);
+    current_object_->setFilled(false);
+    current_object_->setStrokeWidth(5);
+    current_object_->setColor(color_slider_);
     color_slider_.setup("Pick the line color you want!", ofColor(), ofColor(), 20, 300);
     color_slider_.setShape(0, 70, 250, 100);
     settings_active_ = false;
@@ -62,18 +62,18 @@ void ofApp::draw(){
     if (settings_active_){
         color_slider_.draw();
     }
-    for (auto &line : user_lines_) {
+    for (auto &line : user_objects_) {
         line->draw();
     }
-    if (point_onscreen_ == 0)
+    if (missing_point_frame_counter_ == 0)
     {
-        point_onscreen_ += 1;
+        missing_point_frame_counter_ += 1;
     } else {
-        if (point_onscreen_ == 20) {
-            newLine();
-            point_onscreen_ = 21;
+        if (missing_point_frame_counter_ == 20) {
+            newObject();
+            missing_point_frame_counter_ = 21;
         } else {
-            point_onscreen_ += 1;
+            missing_point_frame_counter_ += 1;
         }
     }
     ofPath color_picker;
@@ -86,29 +86,29 @@ void ofApp::draw(){
 /*
  * Creates a new line (independent of all other lines drawn).
  */
-void ofApp::newLine() {
-    user_lines_.push_back(new ofPath());
-    current_line_ = user_lines_.back();
+void ofApp::newObject() {
+    user_objects_.push_back(new ofPath());
+    current_object_ = user_objects_.back();
 }
 
 /*
  * Makes a new shape based on the specification of the user.
  */
 void ofApp::newShape(char shape_type) {
-    newLine();
+    newObject();
     if (shape_type == 'r') {
-        current_line_->rectangle(current_points_.at(0), current_points_.at(1), 100, 100);
+        current_object_->rectangle(current_points_.at(0), current_points_.at(1), 100, 100);
     } else if (shape_type == 'c') {
-        current_line_->circle(current_points_.at(0), current_points_.at(1), 50);
+        current_object_->circle(current_points_.at(0), current_points_.at(1), 50);
     } else if (shape_type == 't') {
         int x = current_points_.at(0);
         int y = current_points_.at(1);
-        current_line_->triangle(x, y, x - 50, y + 50, x + 50, y + 50);
+        current_object_->triangle(x, y, x - 50, y + 50, x + 50, y + 50);
     }
     shape_type_ = shape_type;
-    current_line_->setFilled(true);
-    current_line_->setColor(color_slider_);
-    shape_set_ = false;
+    current_object_->setFilled(true);
+    current_object_->setColor(color_slider_);
+    set_shape_ = false;
 }
 
 /*
@@ -117,25 +117,25 @@ void ofApp::newShape(char shape_type) {
 void ofApp::addPoint(int x, int y) {
     ofPoint point;
     point.set(x,y);
-    current_line_->lineTo(x, y);
-    current_line_->setFilled(false);
-    current_line_->setStrokeWidth(5);
-    current_line_->setColor(color_slider_);
+    current_object_->lineTo(x, y);
+    current_object_->setFilled(false);
+    current_object_->setStrokeWidth(5);
+    current_object_->setColor(color_slider_);
 }
 
 /*
  * Moves the shape in question or finalizes its location.
  */
 void ofApp::setShape() {
-    user_lines_.pop_back();
-    delete current_line_;
-    current_line_ = user_lines_.back();
+    user_objects_.pop_back();
+    delete current_object_;
+    current_object_ = user_objects_.back();
     newShape(shape_type_);
     if (shape_area_.at(0) > 0 && std::abs(shape_area_.at(1) - shape_area_.at(0)) > 300) {
-        shape_set_ = true;
-        newLine();
+        set_shape_ = true;
+        newObject();
     }
-    point_onscreen_ = 0;
+    missing_point_frame_counter_ = 0;
 }
 
 //
@@ -154,20 +154,22 @@ void ofApp::update(){
         rgb_image_.resize(width_, height_);
         rgb_image_.mirror(false, true);
         if (target_hue_ > -1) {
-            findPoint();
+            //find potential points via HSV and then apply the euclidian formula to further approximate the points
+            findPotentialPoints();
             std::vector<int> approximate_points = applyEuclidianFormula();
             int approx_x = approximate_points.front();
             int approx_y = approximate_points.back();
             if (approx_x > -1 && approx_y > -1) {
-                if (shape_set_) {
+                if (set_shape_) {
                     addPoint(approx_x, approx_y);
-                    point_onscreen_ = 0;
+                    missing_point_frame_counter_ = 0;
                 }
                 current_points_ = approximate_points;
             }
             approximate_points.erase(approximate_points.begin(), approximate_points.end());
         }
-        if (!shape_set_) {
+        //if the application is in shape setting mode, call setShape();
+        if (!set_shape_) {
             setShape();
         }
     }
@@ -178,7 +180,7 @@ void ofApp::update(){
  * matches the desired hue, the pixel will be painted white. If not, the pixel will be made black.
  * This is to isolate all the possible points.
  */
-void ofApp::findPoint() {
+void ofApp::findPotentialPoints() {
     hsb_image_ = rgb_image_;
     hsb_image_.convertRgbToHsv();
     hsb_image_.convertToGrayscalePlanarImages(hue_image_, saturation_image_, brightness_image_);
@@ -232,20 +234,20 @@ std::vector<int> ofApp::applyEuclidianFormula() {
 void ofApp::keyPressed(int key){
     ofPoint point;
     if (key == 'd' || key == 'D'){
-        for (int x = 0; x < user_lines_.size(); x++) {
-            (user_lines_.at(x))->clear();
-            user_lines_.erase(user_lines_.begin() + x);
-            user_lines_.clear();
-            newLine();
+        for (int x = 0; x < user_objects_.size(); x++) {
+            (user_objects_.at(x))->clear();
+            user_objects_.erase(user_objects_.begin() + x);
+            user_objects_.clear();
+            newObject();
         }
     }
     else if (key == 'b' || key == 'B') {
-        current_line_->clear();
+        current_object_->clear();
     }
     else if (key == 's' || key == 'S') {
         settings_active_ = !settings_active_;
         if (!settings_active_) {
-            current_line_->setColor(color_slider_);
+            current_object_->setColor(color_slider_);
         }
     } else if (key == 'r' || key == 'R') {
         newShape('r');

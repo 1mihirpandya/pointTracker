@@ -223,7 +223,7 @@ std::vector<int> ofApp::applyEuclidianFormula() {
 }
 
 //
-// BUILD IN METHODS USED IN THE APPLICATION
+// BUILT IN USER PROMPTED METHODS
 //
 
 /*

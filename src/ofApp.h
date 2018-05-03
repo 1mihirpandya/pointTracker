@@ -14,6 +14,8 @@ class ofApp : public ofBaseApp{
     ofPath *current_object_;
     ofxColorSlider color_slider_;
     bool settings_active_;
+    bool set_shape_;
+    char shape_type_;
     //variables related to video and point tracking
     std::vector<int> current_points_;
     std::vector<float> shape_area_;
@@ -28,8 +30,6 @@ class ofApp : public ofBaseApp{
     ofColor target_color_;
     int missing_point_frame_counter_;
     int target_hue_;
-    bool set_shape_;
-    char shape_type_;
     
 public:
     //functions that set up the application
@@ -46,7 +46,7 @@ public:
     void update();
     void findPotentialPoints();
     std::vector<int> applyEuclidianFormula();
-    //built in functions used in the application
+    //built in user prompted methods
     void keyPressed(int key);
     void mousePressed(int x, int y, int button);
     void windowResized(int w, int h);

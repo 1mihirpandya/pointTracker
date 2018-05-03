@@ -35,6 +35,7 @@ public:
     void setup();
     void update();
     void setupTrackingFunctionality(int width, int height);
+    void setShape();
     void setupDrawingFunctionality();
     std::vector<int> applyEuclidianFormula();
     void newShape(char shape_type);

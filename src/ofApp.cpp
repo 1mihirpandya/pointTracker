@@ -62,17 +62,21 @@ void ofApp::update(){
             approximate_points.erase(approximate_points.begin(), approximate_points.end());
         }
         if (!shape_set_) {
-            user_lines_.pop_back();
-            delete current_line_;
-            current_line_ = user_lines_.back();
-            newShape(shape_type_);
-            if (shape_area_.at(0) > 0 && std::abs(shape_area_.at(1) - shape_area_.at(0)) > 300) {
-                shape_set_ = true;
-                newLine();
-            }
-            point_onscreen_ = 0;
+            setShape();
         }
     }
+}
+
+void ofApp::setShape() {
+    user_lines_.pop_back();
+    delete current_line_;
+    current_line_ = user_lines_.back();
+    newShape(shape_type_);
+    if (shape_area_.at(0) > 0 && std::abs(shape_area_.at(1) - shape_area_.at(0)) > 300) {
+        shape_set_ = true;
+        newLine();
+    }
+    point_onscreen_ = 0;
 }
 
 std::vector<int> ofApp::applyEuclidianFormula() {
@@ -102,12 +106,15 @@ void ofApp::findPoint() {
     hsb_image_ = rgb_image_;
     hsb_image_.convertRgbToHsv();
     hsb_image_.convertToGrayscalePlanarImages(hue_image_, saturation_image_, brightness_image_);
-    
     for (int i = 0; i < width_ * height_; i++) {
-        filtered_image_.getPixels()[i] = ofInRange(hue_image_.getPixels()[i],target_hue_-5,target_hue_+5) ? 255 : 0;
+        if (ofInRange(hue_image_.getPixels()[i],target_hue_ - 5,target_hue_ + 5)) {
+            filtered_image_.getPixels()[i] = 255;
+        } else {
+            filtered_image_.getPixels()[i] = 0;
+        }
     }
     filtered_image_.flagImageChanged();
-    contours_.findContours(filtered_image_, 50, width_ * height_/2, 1, false);
+    contours_.findContours(filtered_image_, 50, width_ * height_ / 2, 1, false);
 }
 
 

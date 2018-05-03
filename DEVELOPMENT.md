@@ -30,3 +30,6 @@ Added the ability to drop shapes into the frame.
 
 ## Update 8:
 Added the ability to create a shape (rectangle, circle, triangle), drag it to the desired location, and then "drop" it there by "clicking" the screen with the marker. Used depth perception.
+
+## Update 9:
+Tried to split the code into different classes to make files smaller and improve readability. While successful, this actually made the runtime worse and the operations unreasonably complicated, which was not the desired result. Due to this, I reverted the code to the one page format.

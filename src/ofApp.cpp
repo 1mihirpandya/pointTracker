@@ -1,8 +1,12 @@
 #include "ofApp.h"
 
-//--------------------------------------------------------------
+//
+// SETUP METHODS
+//
+/*
+ * Sets up the application GUI and base functionality.
+ */
 void ofApp::setup(){
-    
     ofBackground(0,0,0);
     ofSetBackgroundAuto(false);
     ofEnableAlphaBlending();
@@ -13,6 +17,9 @@ void ofApp::setup(){
     setupDrawingFunctionality();
 }
 
+/*
+ * Set up all the variables and values needed to track a color on the screen.
+ */
 void ofApp::setupTrackingFunctionality(int width, int height) {
     rgb_image_.allocate(width, height);
     hsb_image_.allocate(width, height);
@@ -26,6 +33,10 @@ void ofApp::setupTrackingFunctionality(int width, int height) {
     shape_area_ = {0,0};
 }
 
+/*
+ * Set up the user_lines_ and current_line_ to allow the user to draw.
+ * Also sets up the color slider so users can pick their drawing color.
+ */
 void ofApp::setupDrawingFunctionality() {
     user_lines_.push_back(new ofPath());
     current_line_ = user_lines_.back();
@@ -38,87 +49,14 @@ void ofApp::setupDrawingFunctionality() {
     settings_active_ = false;
 }
 
-//--------------------------------------------------------------
-//http://beriomolina.com/Tracking-colors-tracking-laser/
-//https://sites.google.com/site/ofauckland/examples/10-testing
-void ofApp::update(){
-    video_.update();
-    if (video_.isFrameNew()) {
-        rgb_image_.setFromPixels(video_.getPixels());
-        rgb_image_.resize(width_, height_);
-        rgb_image_.mirror(false, true);
-        if (target_hue_ > -1) {
-            findPoint();
-            std::vector<int> approximate_points = applyEuclidianFormula();
-            int approx_x = approximate_points.front();
-            int approx_y = approximate_points.back();
-            if (approx_x > -1 && approx_y > -1) {
-                if (shape_set_) {
-                    addPoint(approx_x, approx_y);
-                    point_onscreen_ = 0;
-                }
-                current_points_ = approximate_points;
-            }
-            approximate_points.erase(approximate_points.begin(), approximate_points.end());
-        }
-        if (!shape_set_) {
-            setShape();
-        }
-    }
-}
+//
+// DRAWING/LINE EDITING METHODS
+//
 
-void ofApp::setShape() {
-    user_lines_.pop_back();
-    delete current_line_;
-    current_line_ = user_lines_.back();
-    newShape(shape_type_);
-    if (shape_area_.at(0) > 0 && std::abs(shape_area_.at(1) - shape_area_.at(0)) > 300) {
-        shape_set_ = true;
-        newLine();
-    }
-    point_onscreen_ = 0;
-}
-
-std::vector<int> ofApp::applyEuclidianFormula() {
-    float min_difference = 255;
-    int approx_x = -1;
-    int approx_y = -1;
-    ofPixelsRef screen = video_.getPixels();
-    for (int i=0; i<contours_.nBlobs; i++) {
-        ofColor color = screen.getColor(contours_.blobs[i].centroid.x, contours_.blobs[i].centroid.y);
-        float r_difference = color.r - target_color_.r;
-        float g_difference = color.g - target_color_.g;
-        float b_difference = color.b - target_color_.b;
-        float color_difference = sqrt(r_difference * r_difference + r_difference * r_difference + r_difference * r_difference);
-        if(color_difference < min_difference){
-            min_difference = color_difference;
-            approx_x = contours_.blobs[i].centroid.x;
-            approx_y = contours_.blobs[i].centroid.y;
-            shape_area_.at(0) = shape_area_.at(1);
-            shape_area_.at(1) = contours_.blobs[i].area;
-            std::cout << shape_area_.at(0) << "  " << shape_area_.at(1) << std::endl;
-        }
-    }
-    return {approx_x, approx_y};
-}
-
-void ofApp::findPoint() {
-    hsb_image_ = rgb_image_;
-    hsb_image_.convertRgbToHsv();
-    hsb_image_.convertToGrayscalePlanarImages(hue_image_, saturation_image_, brightness_image_);
-    for (int i = 0; i < width_ * height_; i++) {
-        if (ofInRange(hue_image_.getPixels()[i],target_hue_ - 5,target_hue_ + 5)) {
-            filtered_image_.getPixels()[i] = 255;
-        } else {
-            filtered_image_.getPixels()[i] = 0;
-        }
-    }
-    filtered_image_.flagImageChanged();
-    contours_.findContours(filtered_image_, 50, width_ * height_ / 2, 1, false);
-}
-
-
-//--------------------------------------------------------------
+/*
+ * Draws the base image, the lines/shapes, the color slider (if applicable),
+ * and the color picker.
+ */
 void ofApp::draw(){
     rgb_image_.draw(0,0);
     if (settings_active_){
@@ -145,20 +83,17 @@ void ofApp::draw(){
     color_picker.draw();
 }
 
+/*
+ * Creates a new line (independent of all other lines drawn).
+ */
 void ofApp::newLine() {
     user_lines_.push_back(new ofPath());
     current_line_ = user_lines_.back();
 }
 
-void ofApp::addPoint(int x, int y) {
-    ofPoint point;
-    point.set(x,y);
-    current_line_->lineTo(x, y);
-    current_line_->setFilled(false);
-    current_line_->setStrokeWidth(5);
-    current_line_->setColor(color_slider_);
-}
-
+/*
+ * Makes a new shape based on the specification of the user.
+ */
 void ofApp::newShape(char shape_type) {
     newLine();
     if (shape_type == 'r') {
@@ -176,9 +111,125 @@ void ofApp::newShape(char shape_type) {
     shape_set_ = false;
 }
 
-//--------------------------------------------------------------
-void ofApp::keyPressed  (int key){
-    //updates the point and adds the vertex to the line
+/*
+ * Adds a point at the given index to the current line.
+ */
+void ofApp::addPoint(int x, int y) {
+    ofPoint point;
+    point.set(x,y);
+    current_line_->lineTo(x, y);
+    current_line_->setFilled(false);
+    current_line_->setStrokeWidth(5);
+    current_line_->setColor(color_slider_);
+}
+
+/*
+ * Moves the shape in question or finalizes its location.
+ */
+void ofApp::setShape() {
+    user_lines_.pop_back();
+    delete current_line_;
+    current_line_ = user_lines_.back();
+    newShape(shape_type_);
+    if (shape_area_.at(0) > 0 && std::abs(shape_area_.at(1) - shape_area_.at(0)) > 300) {
+        shape_set_ = true;
+        newLine();
+    }
+    point_onscreen_ = 0;
+}
+
+//
+// POINT TRACKING METHODS
+//
+
+/*
+ * Updates the video object. If the frame has changed, it will update the rgb_image_ variable
+ * and go through the process of finding the closest approximation of the point to track.
+ * This site was used as a reference when writing the color tracking portion: https://sites.google.com/site/ofauckland/examples/10-testing
+ */
+void ofApp::update(){
+    video_.update();
+    if (video_.isFrameNew()) {
+        rgb_image_.setFromPixels(video_.getPixels());
+        rgb_image_.resize(width_, height_);
+        rgb_image_.mirror(false, true);
+        if (target_hue_ > -1) {
+            findPoint();
+            std::vector<int> approximate_points = applyEuclidianFormula();
+            int approx_x = approximate_points.front();
+            int approx_y = approximate_points.back();
+            if (approx_x > -1 && approx_y > -1) {
+                if (shape_set_) {
+                    addPoint(approx_x, approx_y);
+                    point_onscreen_ = 0;
+                }
+                current_points_ = approximate_points;
+            }
+            approximate_points.erase(approximate_points.begin(), approximate_points.end());
+        }
+        if (!shape_set_) {
+            setShape();
+        }
+    }
+}
+
+/*
+ * This method will filter out the pixels in the image using the hue. If the pixel hue
+ * matches the desired hue, the pixel will be painted white. If not, the pixel will be made black.
+ * This is to isolate all the possible points.
+ */
+void ofApp::findPoint() {
+    hsb_image_ = rgb_image_;
+    hsb_image_.convertRgbToHsv();
+    hsb_image_.convertToGrayscalePlanarImages(hue_image_, saturation_image_, brightness_image_);
+    for (int i = 0; i < width_ * height_; i++) {
+        if (ofInRange(hue_image_.getPixels()[i],target_hue_ - 5,target_hue_ + 5)) {
+            filtered_image_.getPixels()[i] = 255;
+        } else {
+            filtered_image_.getPixels()[i] = 0;
+        }
+    }
+    filtered_image_.flagImageChanged();
+    contours_.findContours(filtered_image_, 50, width_ * height_ / 2, 1, false);
+}
+
+/*
+ * After finding the potential contour points, the euclidian formula will find
+ * the coordinates of the countour "blob" with the color closest to the target_color_.
+ */
+std::vector<int> ofApp::applyEuclidianFormula() {
+    float min_difference = 255;
+    int approx_x = -1;
+    int approx_y = -1;
+    ofPixelsRef screen = video_.getPixels();
+    for (int i=0; i<contours_.nBlobs; i++) {
+        ofColor color = screen.getColor(contours_.blobs[i].centroid.x, contours_.blobs[i].centroid.y);
+        float r_difference = color.r - target_color_.r;
+        float g_difference = color.g - target_color_.g;
+        float b_difference = color.b - target_color_.b;
+        float color_difference = sqrt(r_difference * r_difference + r_difference * r_difference + r_difference * r_difference);
+        if(color_difference < min_difference){
+            min_difference = color_difference;
+            approx_x = contours_.blobs[i].centroid.x;
+            approx_y = contours_.blobs[i].centroid.y;
+            shape_area_.at(0) = shape_area_.at(1);
+            shape_area_.at(1) = contours_.blobs[i].area;
+            std::cout << shape_area_.at(0) << "  " << shape_area_.at(1) << std::endl;
+        }
+    }
+    return {approx_x, approx_y};
+}
+
+//
+// BUILD IN METHODS USED IN THE APPLICATION
+//
+
+/*
+ * Allows users to safely delete all the lines (with d or D), clear the current line
+ * (with b or B), activate the settings/line color picker (with s or S), or make a
+ * new shape (r/R for rectange, c/C for circle, and t/T for triangle).
+ */
+void ofApp::keyPressed(int key){
     ofPoint point;
     if (key == 'd' || key == 'D'){
         for (int x = 0; x < user_lines_.size(); x++) {
@@ -205,17 +256,21 @@ void ofApp::keyPressed  (int key){
     }
 }
 
-//--------------------------------------------------------------
+/*
+ * Takes the clicked point's hue and color and set them as the new target_color_ and target_hue_.
+ */
 void ofApp::mousePressed(int x, int y, int button){
-    //calculate local mouse x,y in image
+    //calculate the location of the "click"
     int scaled_x = x % width_;
     int scaled_y = y % height_;
-    //get hue_image_ value on mouse position
+    //get the rgb value of the mouse position and get hue_image_ value on mouse position
     target_hue_ = hue_image_.getPixels()[scaled_y * width_ + scaled_x];
     target_color_ = rgb_image_.getPixels().getColor(scaled_x, scaled_y);
 }
 
-//--------------------------------------------------------------
+/*
+ * Updates the width and the height and updates all the image/video frames.
+ */
 void ofApp::windowResized(int w, int h){
     width_ = w;
     height_ = h;

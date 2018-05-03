@@ -31,18 +31,21 @@ class ofApp : public ofBaseApp{
     bool shape_set_;
     char shape_type_;
 public:
-    //a line drawn solely via keyboard
+    //functions that set up the application
     void setup();
-    void update();
     void setupTrackingFunctionality(int width, int height);
-    void setShape();
     void setupDrawingFunctionality();
-    std::vector<int> applyEuclidianFormula();
-    void newShape(char shape_type);
-    void findPoint();
+    //drawing/line editing functions
     void draw();
     void newLine();
+    void newShape(char shape_type);
     void addPoint(int x, int y);
+    void setShape();
+    //point tracking functions
+    void update();
+    void findPoint();
+    std::vector<int> applyEuclidianFormula();
+    //built in functions used in the application
     void keyPressed(int key);
     void mousePressed(int x, int y, int button);
     void windowResized(int w, int h);
